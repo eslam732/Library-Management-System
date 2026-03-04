@@ -70,8 +70,10 @@ const UserRepository = {
      * @returns {Promise<Array>}
      */
     async findPaginated(limit, offset) {
-        const sql = 'SELECT id, name, email, role, registered_date, created_at, updated_at FROM users ORDER BY registered_date DESC LIMIT ? OFFSET ?';
-        const [rows] = await db.execute(sql, [limit, offset]);
+        limit = parseInt(limit, 10);
+        offset = parseInt(offset, 10);
+        const sql = `SELECT id, name, email, role, registered_date, created_at, updated_at FROM users ORDER BY registered_date DESC LIMIT ${limit} OFFSET ${offset}`;
+        const [rows] = await db.execute(sql);
         return rows;
     },
 
