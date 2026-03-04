@@ -1,0 +1,511 @@
+{
+  "info": {
+    "name": "Library Management System",
+    "_postman_id": "lib-management-system-v1",
+    "description": "Complete API collection for the Library Management System.\n\n**Setup:**\n1. Import this file into Postman.\n2. Set the `baseUrl` variable to `http://localhost:3000` (already set as default).\n3. Call **Login** or **Register** — the collection will automatically save the JWT token into the `token` variable.\n4. All protected requests pick up the token from that variable automatically.\n\n**Roles:**\n- `user` — register/login, borrow/return books, view books, manage own profile.\n- `admin` — everything above + manage books, manage all users, view overdue/analytics/exports.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token — set automatically after Login or Register"
+    },
+    {
+      "key": "superAdminPass",
+      "value": "change_this_super_secret_password",
+      "type": "string",
+      "description": "Value of SUPERADMINPASS in your .env file"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Public endpoints — no JWT required.",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "    pm.collectionVariables.set('token', json.data.token);",
+                  "    console.log('Token saved.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Register a new user (role defaults to 'user').\nThe JWT token is saved to the `token` variable automatically."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "    pm.collectionVariables.set('token', json.data.token);",
+                  "    console.log('Token saved.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login with email and password.\nThe JWT token is saved to the `token` variable automatically."
+          }
+        },
+        {
+          "name": "Register Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "    pm.collectionVariables.set('token', json.data.token);",
+                  "    console.log('Admin token saved.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "admin-pass", "value": "{{superAdminPass}}", "description": "Must match SUPERADMINPASS in .env" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Super Admin\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"adminpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register-admin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register-admin"]
+            },
+            "description": "Register a new admin user.\nRequires the `admin-pass` header to match `SUPERADMINPASS` in your .env.\nNo JWT needed — guarded by the shared secret only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Books",
+      "description": "GET endpoints — any authenticated user.\nPOST / PUT / DELETE — admin only.",
+      "item": [
+        {
+          "name": "List All Books",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books?page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "books"],
+              "query": [
+                { "key": "page", "value": "1", "description": "Page number (default: 1)" }
+              ]
+            },
+            "description": "Returns a paginated list of all books.\nPage size is controlled by `ITEMS_PER_PAGE` in .env (default: 10)."
+          }
+        },
+        {
+          "name": "Search Books",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/search?title=gatsby",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "books", "search"],
+              "query": [
+                { "key": "title", "value": "gatsby", "description": "Search by title (partial match)" },
+                { "key": "author", "value": "", "description": "Search by author (partial match)", "disabled": true },
+                { "key": "isbn", "value": "", "description": "Search by ISBN (partial match)", "disabled": true }
+              ]
+            },
+            "description": "Search books by title, author, and/or ISBN. At least one query param required."
+          }
+        },
+        {
+          "name": "Get Book by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "books", "1"]
+            },
+            "description": "Get a single book by its ID."
+          }
+        },
+        {
+          "name": "Add Book (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"The Great Gatsby\",\n  \"author\": \"F. Scott Fitzgerald\",\n  \"isbn\": \"9780743273565\",\n  \"quantity\": 5,\n  \"shelf_location\": \"A1-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "books"]
+            },
+            "description": "Add a new book. **Admin only.**\n\nRequired fields: title, author, isbn, quantity, shelf_location."
+          }
+        },
+        {
+          "name": "Update Book (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Title\",\n  \"quantity\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/books/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "books", "1"]
+            },
+            "description": "Update one or more fields of a book. **Admin only.**\n\nAll fields are optional — send only what you want to change."
+          }
+        },
+        {
+          "name": "Delete Book (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "books", "1"]
+            },
+            "description": "Delete a book by ID. **Admin only.**\n\nWill fail if any copies are currently checked out."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "/me endpoints — any authenticated user.\nAll other endpoints — admin only.",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me"]
+            },
+            "description": "Returns the profile of the currently authenticated user."
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me"]
+            },
+            "description": "Update your own name and/or email.\n\nAt least one field (name or email) is required."
+          }
+        },
+        {
+          "name": "List All Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users?page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"],
+              "query": [
+                { "key": "page", "value": "1", "description": "Page number (default: 1)" }
+              ]
+            },
+            "description": "Paginated list of all users. **Admin only.**"
+          }
+        },
+        {
+          "name": "Get User by ID (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "1"]
+            },
+            "description": "Get any user by ID. **Admin only.**"
+          }
+        },
+        {
+          "name": "Update User (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"email\": \"newemail@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "1"]
+            },
+            "description": "Update any user's name or email. **Admin only.**\n\nAt least one field required."
+          }
+        },
+        {
+          "name": "Delete User (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "1"]
+            },
+            "description": "Delete a user by ID. **Admin only.**\n\nWill fail if the user has borrowing records."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Borrowings",
+      "description": "Checkout/return/my-books — any authenticated user.\nOverdue, analytics, exports — admin only.",
+      "item": [
+        {
+          "name": "Checkout Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"book_id\": 1,\n  \"due_date\": \"2026-03-18\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/borrowings/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "borrowings", "checkout"]
+            },
+            "description": "Check out a book. The user ID is taken from the JWT — you cannot borrow on behalf of someone else.\n\n- `book_id` — required.\n- `due_date` — optional ISO date (YYYY-MM-DD). Defaults to today + 14 days.\n\nRate limited: 10 requests / minute."
+          }
+        },
+        {
+          "name": "Return Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"book_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/borrowings/return",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "borrowings", "return"]
+            },
+            "description": "Return a book you have checked out. Finds the active borrowing for the authenticated user automatically.\n\nRate limited: 10 requests / minute."
+          }
+        },
+        {
+          "name": "My Checked-Out Books",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrowings/my-books",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "borrowings", "my-books"]
+            },
+            "description": "Returns all books currently checked out by the authenticated user."
+          }
+        },
+        {
+          "name": "Overdue Books (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrowings/overdue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "borrowings", "overdue"]
+            },
+            "description": "Returns all books that are past their due date and not yet returned. **Admin only.**"
+          }
+        },
+        {
+          "name": "Analytics Report (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrowings/analytics?start_date=2026-02-01&end_date=2026-03-01&format=json",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "borrowings", "analytics"],
+              "query": [
+                { "key": "start_date", "value": "2026-02-01", "description": "Start of period (YYYY-MM-DD) — required" },
+                { "key": "end_date", "value": "2026-03-01", "description": "End of period (YYYY-MM-DD) — required" },
+                { "key": "format", "value": "json", "description": "Response format: json | csv | xlsx (default: json)" }
+              ]
+            },
+            "description": "Borrowing analytics for a given date range. **Admin only.**\n\nSet `format=csv` or `format=xlsx` to download as a file."
+          }
+        },
+        {
+          "name": "Export Overdue Last Month (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrowings/export/overdue-last-month?format=csv",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "borrowings", "export", "overdue-last-month"],
+              "query": [
+                { "key": "format", "value": "csv", "description": "csv or xlsx" }
+              ]
+            },
+            "description": "Export overdue books from last month as CSV or XLSX. **Admin only.**"
+          }
+        },
+        {
+          "name": "Export Borrowings Last Month (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrowings/export/borrowings-last-month?format=csv",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "borrowings", "export", "borrowings-last-month"],
+              "query": [
+                { "key": "format", "value": "csv", "description": "csv or xlsx" }
+              ]
+            },
+            "description": "Export all borrowing activity from last month as CSV or XLSX. **Admin only.**"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Public endpoint. Returns 200 OK if the server is running."
+          }
+        }
+      ]
+    }
+  ]
+}
