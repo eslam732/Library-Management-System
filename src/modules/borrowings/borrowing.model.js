@@ -37,6 +37,15 @@ const BorrowingModel = {
     },
 
     /**
+     * Count how many copies of a book are currently checked out by anyone.
+     * @param {number} bookId
+     * @returns {Promise<number>}
+     */
+    async countActiveForBook(bookId) {
+        return BorrowingRepository.countActiveForBook(bookId);
+    },
+
+    /**
      * Mark a borrowing as returned.
      * @param {number} id
      * @returns {Promise<Object>}
