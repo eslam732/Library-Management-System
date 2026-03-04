@@ -5,6 +5,7 @@
  */
 
 const BookModel = require('./book.model');
+const BorrowingModel = require('../borrowings/borrowing.model');
 const { NotFound, BadRequest, ConflictError } = require('../../utils/errors');
 const asyncHandler = require('../../utils/asyncHandler');
 const config = require('../../config');
@@ -143,20 +144,15 @@ const deleteBook = asyncHandler(async (req, res) => {
         throw new NotFound('Book not found.');
     }
 
-    // Prevent deletion if copies are checked out
-    if (book.available_quantity < book.quantity) {
-        throw new BadRequest('Cannot delete a book with copies currently checked out.');
+    // Prevent deletion if there are active (unreturned) borrowings
+    const activeBorrowings = await BorrowingModel.countActiveForBook(req.params.id);
+    if (activeBorrowings > 0) {
+        throw new BadRequest(
+            `Cannot delete this book. ${activeBorrowings} cop${activeBorrowings === 1 ? 'y is' : 'ies are'} currently checked out.`
+        );
     }
 
-    try {
-        await BookModel.delete(req.params.id);
-    } catch (err) {
-        // Handle foreign key constraint (borrowing records exist)
-        if (err.code === 'ER_ROW_IS_REFERENCED_2') {
-            throw new BadRequest('Cannot delete this book because it has borrowing records. Remove related records first.');
-        }
-        throw err;
-    }
+    await BookModel.delete(req.params.id);
 
     res.status(200).json({
         success: true,
