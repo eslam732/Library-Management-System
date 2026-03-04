@@ -26,13 +26,14 @@ router.get('/search', validate(searchBookSchema, 'query'), bookController.search
 // Get a single book by ID
 router.get('/:id', bookController.getBookById);
 
-// Add a new book (admin only)
-router.post('/', authorize('admin'), validate(createBookSchema), bookController.createBook);
+// Admin-only routes
+const adminRouter = express.Router();
+adminRouter.use(authorize('admin'));
 
-// Update a book (admin only)
-router.put('/:id', authorize('admin'), validate(updateBookSchema), bookController.updateBook);
+adminRouter.post('/',    validate(createBookSchema), bookController.createBook);
+adminRouter.put('/:id',  validate(updateBookSchema), bookController.updateBook);
+adminRouter.delete('/:id',bookController.deleteBook);
 
-// Delete a book (admin only)
-router.delete('/:id', authorize('admin'), bookController.deleteBook);
+router.use('/', adminRouter);
 
 module.exports = router;
