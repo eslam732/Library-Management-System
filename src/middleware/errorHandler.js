@@ -27,17 +27,6 @@ const errorHandler = (err, req, res, _next) => {
     });
 
     // ------------------------------------------------------------------
-    // Console output (development only, no stack on operational errors)
-    // ------------------------------------------------------------------
-    if (process.env.NODE_ENV !== 'production') {
-        if (isOperational) {
-            console.error(`[${err.name || 'AppError'}] ${statusCode} — ${err.message}`);
-        } else {
-            console.error('[UnhandledError]', err);
-        }
-    }
-
-    // ------------------------------------------------------------------
     // HTTP response — stack is NEVER included
     // ------------------------------------------------------------------
     res.status(statusCode).json({
