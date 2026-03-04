@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # ── MySQL Database ────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: library_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: library_db
+      MYSQL_USER: library_user
+      MYSQL_PASSWORD: library_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./src/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - library_network
+
+  # ── Node.js API Server ────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: library_api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: library_user
+      DB_PASSWORD: library_password
+      DB_NAME: library_db
+      JWT_SECRET: change_this_to_a_strong_secret_in_production
+      JWT_EXPIRES_IN: 7d
+      ITEMS_PER_PAGE: 10
+      DEFAULT_BORROW_DAYS: 14
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - library_network
+
+volumes:
+  mysql_data:
+
+networks:
+  library_network:
+    driver: bridge
