@@ -28,13 +28,8 @@ const checkout = asyncHandler(async (req, res) => {
         throw new NotFound('Book not found.');
     }
 
-    // Check if all copies are already borrowed out
-    const activeBorrowings = await BorrowingModel.countActiveForBook(book_id);
-    if (activeBorrowings >= book.quantity) {
-        throw new BadRequest(`All ${book.quantity} cop${book.quantity === 1 ? 'y' : 'ies'} of this book are currently borrowed out.`);
-    }
 
-    // Check if book is available (available_quantity as second safety net)
+    // Check if book is available
     if (book.available_quantity <= 0) {
         throw new BadRequest('No copies of this book are currently available.');
     }

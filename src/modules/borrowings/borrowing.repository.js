@@ -56,20 +56,6 @@ const BorrowingRepository = {
     },
 
     /**
-     * Count how many copies of a book are currently checked out (not returned).
-     * @param {number} bookId
-     * @returns {Promise<number>}
-     */
-    async countActiveForBook(bookId) {
-        const sql = `
-            SELECT COUNT(*) as total FROM borrowings
-            WHERE book_id = ? AND return_date IS NULL
-        `;
-        const [rows] = await db.execute(sql, [bookId]);
-        return rows[0].total;
-    },
-
-    /**
      * Mark a borrowing as returned.
      * @param {number} id
      * @returns {Promise<void>}
