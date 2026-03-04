@@ -35,6 +35,9 @@ const config = {
 
     // Borrowing defaults
     defaultBorrowDays: parseInt(process.env.DEFAULT_BORROW_DAYS, 10) || 14,
+
+    // Super-admin registration gate
+    superAdminPass: process.env.SUPERADMINPASS,
 };
 
 module.exports = config;

@@ -4,7 +4,7 @@
  * Returns 400 Bad Request with details on validation failure.
  */
 
-const AppError = require('../utils/AppError');
+const { BadRequest } = require('../utils/errors');
 
 /**
  * Creates a validation middleware for the given Joi schema.
@@ -21,7 +21,7 @@ const validate = (schema, source = 'body') => {
 
         if (error) {
             const details = error.details.map((d) => d.message).join(', ');
-            return next(new AppError(`Validation error: ${details}`, 400));
+            return next(new BadRequest(`Validation error: ${details}`));
         }
 
         // Replace the source with the sanitized/validated value

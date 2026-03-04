@@ -5,7 +5,7 @@
  */
 
 const BookModel = require('./book.model');
-const AppError = require('../../utils/AppError');
+const { NotFound, BadRequest, ConflictError } = require('../../utils/errors');
 const asyncHandler = require('../../utils/asyncHandler');
 const config = require('../../config');
 
@@ -17,7 +17,7 @@ const createBook = asyncHandler(async (req, res) => {
     // Check for duplicate ISBN
     const existingBook = await BookModel.findByISBN(req.body.isbn);
     if (existingBook) {
-        throw new AppError('A book with this ISBN already exists.', 409);
+        throw new ConflictError('A book with this ISBN already exists.');
     }
 
     const book = await BookModel.create(req.body);
@@ -72,7 +72,7 @@ const searchBooks = asyncHandler(async (req, res) => {
 const getBookById = asyncHandler(async (req, res) => {
     const book = await BookModel.findById(req.params.id);
     if (!book) {
-        throw new AppError('Book not found.', 404);
+        throw new NotFound('Book not found.');
     }
 
     res.status(200).json({
@@ -88,14 +88,14 @@ const getBookById = asyncHandler(async (req, res) => {
 const updateBook = asyncHandler(async (req, res) => {
     const book = await BookModel.findById(req.params.id);
     if (!book) {
-        throw new AppError('Book not found.', 404);
+        throw new NotFound('Book not found.');
     }
 
     // If ISBN is being changed, check for duplicates
     if (req.body.isbn && req.body.isbn !== book.isbn) {
         const existingBook = await BookModel.findByISBN(req.body.isbn);
         if (existingBook) {
-            throw new AppError('A book with this ISBN already exists.', 409);
+            throw new ConflictError('A book with this ISBN already exists.');
         }
     }
 
@@ -104,9 +104,8 @@ const updateBook = asyncHandler(async (req, res) => {
         const checkedOut = book.quantity - book.available_quantity;
         const newAvailable = req.body.quantity - checkedOut;
         if (newAvailable < 0) {
-            throw new AppError(
-                `Cannot reduce quantity below ${checkedOut}. There are ${checkedOut} copies currently checked out.`,
-                400
+            throw new BadRequest(
+                `Cannot reduce quantity below ${checkedOut}. There are ${checkedOut} copies currently checked out.`
             );
         }
         req.body.available_quantity = newAvailable;
@@ -128,12 +127,12 @@ const updateBook = asyncHandler(async (req, res) => {
 const deleteBook = asyncHandler(async (req, res) => {
     const book = await BookModel.findById(req.params.id);
     if (!book) {
-        throw new AppError('Book not found.', 404);
+        throw new NotFound('Book not found.');
     }
 
     // Prevent deletion if copies are checked out
     if (book.available_quantity < book.quantity) {
-        throw new AppError('Cannot delete a book with copies currently checked out.', 400);
+        throw new BadRequest('Cannot delete a book with copies currently checked out.');
     }
 
     try {
@@ -141,7 +140,7 @@ const deleteBook = asyncHandler(async (req, res) => {
     } catch (err) {
         // Handle foreign key constraint (borrowing records exist)
         if (err.code === 'ER_ROW_IS_REFERENCED_2') {
-            throw new AppError('Cannot delete this book because it has borrowing records. Remove related records first.', 400);
+            throw new BadRequest('Cannot delete this book because it has borrowing records. Remove related records first.');
         }
         throw err;
     }

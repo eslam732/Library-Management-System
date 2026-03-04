@@ -9,7 +9,7 @@ const helmet = require('helmet');
 const { generalRateLimiter } = require('./middleware/rateLimiter');
 const { authenticate } = require('./middleware/auth');
 const errorHandler = require('./middleware/errorHandler');
-const AppError = require('./utils/AppError');
+const { NotFound } = require('./utils/errors');
 
 // Route imports
 const authRoutes = require('./modules/auth/auth.routes');
@@ -43,20 +43,16 @@ app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// ── JWT Authentication for all /api routes below ──────────────────
+// ── Protected API Routes (JWT required) ───────────────────────────
 
-app.use('/api', authenticate);
-
-// ── Protected API Routes ───────────────────────────────────────────
-
-app.use('/api/books', bookRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/borrowings', borrowingRoutes);
+app.use('/api/books', authenticate, bookRoutes);
+app.use('/api/users', authenticate, userRoutes);
+app.use('/api/borrowings', authenticate, borrowingRoutes);
 
 // ── 404 Handler ────────────────────────────────────────────────────
 
 app.use((_req, _res, next) => {
-    next(new AppError('The requested resource was not found.', 404));
+    next(new NotFound('The requested resource was not found.'));
 });
 
 // ── Global Error Handler ───────────────────────────────────────────

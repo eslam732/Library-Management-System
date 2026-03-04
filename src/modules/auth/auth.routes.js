@@ -2,8 +2,9 @@
  * Auth Routes
  * Public routes - no authentication required.
  *
- * POST /api/auth/register  - Register a new user
- * POST /api/auth/login     - Log in and receive a JWT token
+ * POST /api/auth/register        - Register a new user (role: 'user')
+ * POST /api/auth/login           - Log in and receive a JWT token
+ * POST /api/auth/register-admin  - Register an admin (requires "admin-pass" header)
  */
 
 const express = require('express');
@@ -17,5 +18,8 @@ router.post('/register', validate(registerSchema), authController.register);
 
 // Log in
 router.post('/login', validate(loginSchema), authController.login);
+
+// Register an admin — guarded by SUPERADMINPASS in the "admin-pass" header
+router.post('/register-admin', validate(registerSchema), authController.registerAdmin);
 
 module.exports = router;

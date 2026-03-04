@@ -8,7 +8,7 @@
 const BorrowingModel = require('./borrowing.model');
 const BookModel = require('../books/book.model');
 const UserModel = require('../users/user.model');
-const AppError = require('../../utils/AppError');
+const { NotFound, BadRequest } = require('../../utils/errors');
 const asyncHandler = require('../../utils/asyncHandler');
 const { exportCSV, exportXLSX } = require('../../utils/exportHelper');
 const config = require('../../config');
@@ -25,18 +25,18 @@ const checkout = asyncHandler(async (req, res) => {
     // Validate book exists
     const book = await BookModel.findById(book_id);
     if (!book) {
-        throw new AppError('Book not found.', 404);
+        throw new NotFound('Book not found.');
     }
 
     // Check if book is available
     if (book.available_quantity <= 0) {
-        throw new AppError('No copies of this book are currently available.', 400);
+        throw new BadRequest('No copies of this book are currently available.');
     }
 
     // Check if user already has this book checked out
     const activeBorrowing = await BorrowingModel.findActiveBorrowing(book_id, user_id);
     if (activeBorrowing) {
-        throw new AppError('You already have this book checked out.', 400);
+        throw new BadRequest('You already have this book checked out.');
     }
 
     // Calculate due date (default: 14 days from now)
@@ -47,7 +47,7 @@ const checkout = asyncHandler(async (req, res) => {
     // Decrement available quantity
     const decremented = await BookModel.decrementAvailable(book_id);
     if (!decremented) {
-        throw new AppError('Failed to checkout book. No available copies.', 400);
+        throw new BadRequest('Failed to checkout book. No available copies.');
     }
 
     // Create borrowing record
@@ -76,7 +76,7 @@ const returnBook = asyncHandler(async (req, res) => {
     // Find the active borrowing record for this user
     const activeBorrowing = await BorrowingModel.findActiveBorrowing(book_id, user_id);
     if (!activeBorrowing) {
-        throw new AppError('No active borrowing record found for this book.', 404);
+        throw new NotFound('No active borrowing record found for this book.');
     }
 
     // Mark as returned
@@ -99,7 +99,7 @@ const returnBook = asyncHandler(async (req, res) => {
 const getMyBooks = asyncHandler(async (req, res) => {
     const user = await UserModel.findById(req.user.id);
     if (!user) {
-        throw new AppError('User not found.', 404);
+        throw new NotFound('User not found.');
     }
 
     const books = await BorrowingModel.getBooksByUser(req.user.id);

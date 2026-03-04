@@ -8,7 +8,7 @@
 
 const jwt = require('jsonwebtoken');
 const config = require('../config');
-const AppError = require('../utils/AppError');
+const { NotAllowed } = require('../utils/errors');
 
 /**
  * Verify JWT token and attach user to request.
@@ -18,7 +18,7 @@ const authenticate = (req, _res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return next(new AppError('Authentication required. Please provide a valid token.', 401));
+        return next(new NotAllowed('Authentication required. Please provide a valid token.'));
     }
 
     const token = authHeader.split(' ')[1];
@@ -30,9 +30,9 @@ const authenticate = (req, _res, next) => {
         next();
     } catch (err) {
         if (err.name === 'TokenExpiredError') {
-            return next(new AppError('Token has expired. Please log in again.', 401));
+            return next(new NotAllowed('Token has expired. Please log in again.'));
         }
-        return next(new AppError('Invalid token.', 401));
+        return next(new NotAllowed('Invalid token.'));
     }
 };
 
@@ -45,11 +45,11 @@ const authenticate = (req, _res, next) => {
 const authorize = (...roles) => {
     return (req, _res, next) => {
         if (!req.user) {
-            return next(new AppError('Authentication required.', 401));
+            return next(new NotAllowed('Authentication required.'));
         }
 
         if (!roles.includes(req.user.role)) {
-            return next(new AppError('You do not have permission to perform this action.', 403));
+            return next(new NotAllowed('You do not have permission to perform this action.', 403));
         }
 
         next();

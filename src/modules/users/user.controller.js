@@ -6,7 +6,7 @@
  */
 
 const UserModel = require('./user.model');
-const AppError = require('../../utils/AppError');
+const { NotFound, BadRequest, ConflictError } = require('../../utils/errors');
 const asyncHandler = require('../../utils/asyncHandler');
 const config = require('../../config');
 
@@ -40,7 +40,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
 const getMe = asyncHandler(async (req, res) => {
     const user = await UserModel.findById(req.user.id);
     if (!user) {
-        throw new AppError('User not found.', 404);
+        throw new NotFound('User not found.');
     }
 
     res.status(200).json({
@@ -56,7 +56,7 @@ const getMe = asyncHandler(async (req, res) => {
 const getUserById = asyncHandler(async (req, res) => {
     const user = await UserModel.findById(req.params.id);
     if (!user) {
-        throw new AppError('User not found.', 404);
+        throw new NotFound('User not found.');
     }
 
     res.status(200).json({
@@ -72,14 +72,14 @@ const getUserById = asyncHandler(async (req, res) => {
 const updateMe = asyncHandler(async (req, res) => {
     const user = await UserModel.findById(req.user.id);
     if (!user) {
-        throw new AppError('User not found.', 404);
+        throw new NotFound('User not found.');
     }
 
     // If email is being changed, check for duplicates
     if (req.body.email && req.body.email !== user.email) {
         const existing = await UserModel.findByEmail(req.body.email);
         if (existing) {
-            throw new AppError('A user with this email already exists.', 409);
+            throw new ConflictError('A user with this email already exists.');
         }
     }
 
@@ -99,13 +99,13 @@ const updateMe = asyncHandler(async (req, res) => {
 const updateUser = asyncHandler(async (req, res) => {
     const user = await UserModel.findById(req.params.id);
     if (!user) {
-        throw new AppError('User not found.', 404);
+        throw new NotFound('User not found.');
     }
 
     if (req.body.email && req.body.email !== user.email) {
         const existing = await UserModel.findByEmail(req.body.email);
         if (existing) {
-            throw new AppError('A user with this email already exists.', 409);
+            throw new ConflictError('A user with this email already exists.');
         }
     }
 
@@ -125,14 +125,14 @@ const updateUser = asyncHandler(async (req, res) => {
 const deleteUser = asyncHandler(async (req, res) => {
     const user = await UserModel.findById(req.params.id);
     if (!user) {
-        throw new AppError('User not found.', 404);
+        throw new NotFound('User not found.');
     }
 
     try {
         await UserModel.delete(req.params.id);
     } catch (err) {
         if (err.code === 'ER_ROW_IS_REFERENCED_2') {
-            throw new AppError('Cannot delete this user because they have borrowing records.', 400);
+            throw new BadRequest('Cannot delete this user because they have borrowing records.');
         }
         throw err;
     }
