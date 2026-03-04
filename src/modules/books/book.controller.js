@@ -58,10 +58,23 @@ const getAllBooks = asyncHandler(async (req, res) => {
 const searchBooks = asyncHandler(async (req, res) => {
     const results = await BookModel.search(req.query);
 
+    // No filters provided — fall back to paginated list
+    if (results === null) {
+        const limit = config.itemsPerPage;
+        const page = parseInt(req.query.page, 10) || 1;
+        const offset = (page - 1) * limit;
+        const { books, total } = await BookModel.findAll(limit, offset);
+        return res.status(200).json({
+            success: true,
+            data: books,
+            pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+        });
+    }
+
     res.status(200).json({
         success: true,
-        data: Array.isArray(results) ? results : results.books,
-        count: Array.isArray(results) ? results.length : results.total,
+        data: results,
+        count: results.length,
     });
 });
 
