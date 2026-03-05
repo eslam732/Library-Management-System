@@ -42,7 +42,7 @@ services:
       DB_USER: library_user
       DB_PASSWORD: library_password
       DB_NAME: library_db
-      JWT_SECRET: change_this_to_a_strong_secret_in_production
+      JWT_SECRET: jwt_secret_key
       JWT_EXPIRES_IN: 7d
       ITEMS_PER_PAGE: 10
       DEFAULT_BORROW_DAYS: 14
